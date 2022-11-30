@@ -1,17 +1,17 @@
 /**************************************************
 Scene.inl contains the definition of the scene graph
 *****************************************************/
-#include "Scene.h"
-#include "Cube.h"
-#include "Obj.h"
+#include "RTScene.h"
+#include "RTCube.h"
+#include "RTObj.h"
 
 using namespace glm;
-void Scene::init(void)
+void RTScene::init(void)
 {
     // Create a geometry palette
-    geometry["cube"] = new Cube;
-    geometry["teapot"] = new Obj;
-    geometry["bunny"] = new Obj;
+    geometry["cube"] = new RTCube;
+    geometry["teapot"] = new RTObj;
+    geometry["bunny"] = new RTObj;
     geometry["cube"]->init();
     geometry["teapot"]->init("models/teapot.obj");
     geometry["bunny"]->init("models/bunny.obj");
@@ -49,19 +49,19 @@ void Scene::init(void)
     material["bulb"]->shininess = 200.0f;
 
     // Create a model palette
-    model["teapot1"] = new Model;
+    model["teapot1"] = new RTModel;
     model["teapot1"]->geometry = geometry["teapot"];
     model["teapot1"]->material = material["silver"];
-    model["teapot2"] = new Model;
+    model["teapot2"] = new RTModel;
     model["teapot2"]->geometry = geometry["teapot"];
     model["teapot2"]->material = material["ceramic"];
-    model["table piece"] = new Model;
+    model["table piece"] = new RTModel;
     model["table piece"]->geometry = geometry["cube"];
     model["table piece"]->material = material["wood"];
-    model["bunny"] = new Model;
+    model["bunny"] = new RTModel;
     model["bunny"]->geometry = geometry["bunny"];
     model["bunny"]->material = material["turquoise"];
-    model["bulb"] = new Model;
+    model["bulb"] = new RTModel;
     model["bulb"]->geometry = geometry["cube"];
     model["bulb"]->material = material["bulb"];
 
@@ -75,12 +75,12 @@ void Scene::init(void)
     light["bulb"]->color = 1.5f * vec4(1.0f, 0.2f, 0.1f, 1.0f);
 
     // Build the scene graph
-    node["table"] = new Node;
-    node["table top"] = new Node;
-    node["table leg"] = new Node;
-    node["teapot1"] = new Node;
-    node["teapot2"] = new Node;
-    node["bunny"] = new Node;
+    node["table"] = new RTNode;
+    node["table top"] = new RTNode;
+    node["table leg"] = new RTNode;
+    node["teapot1"] = new RTNode;
+    node["teapot2"] = new RTNode;
+    node["bunny"] = new RTNode;
 
     node["table"]->childnodes.push_back(node["table top"]);
     node["table"]->childtransforms.push_back(translate(vec3(0.0f, 1.2f, 0.0f)));
@@ -124,11 +124,4 @@ void Scene::init(void)
     camera->eye_default = vec3(0.0f, 1.0f, 5.0f);
     camera->up_default = vec3(0.0f, 1.0f, 0.0f);
     camera->reset();
-
-    // Initialize shader
-    shader = new SurfaceShader;
-    shader->read_source("shaders/projective.vert", "shaders/lighting.frag");
-    shader->compile();
-    glUseProgram(shader->program);
-    shader->initUniforms();
-};
+}

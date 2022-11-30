@@ -14,14 +14,17 @@
 #include <glm/glm.hpp>
 #include "Screenshot.h"
 #include "Scene.h"
+#include "RTScene.h"
 #include "Image.h"
+#include "Ray.h"
 
-static const int width = 800;
-static const int height = 600;
+static const int width = 200;
+static const int height = 150;
 static const char *title = "Scene viewer";
 static const glm::vec4 background(0.1f, 0.2f, 0.3f, 1.0f);
 static bool rt_mode = false;
 static Scene scene;
+static RTScene rt_scene;
 static Image image(width, height);
 
 void printHelp()
@@ -61,6 +64,8 @@ void initialize(void)
 
     // Initialize scene
     scene.init();
+    rt_scene.init();
+    rt_scene.buildTriangleSoup();
 
     // Initialize image
     image.init();
@@ -72,11 +77,15 @@ void initialize(void)
 
 void display(void)
 {
+    std::cout << "Inside DISPLAY " << std::endl;
     if (rt_mode)
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        RayTracer::Raytrace(*(rt_scene.camera), rt_scene, image);
         image.draw();
+
         glutSwapBuffers();
+        glFlush();
     }
     else
     {
