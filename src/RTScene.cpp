@@ -18,8 +18,8 @@ void RTScene::buildTriangleSoup(void)
     std::stack<mat4> matrix_stack;
 
     // Initialize the current state variable for DFS
-    RTNode *cur = node["world"];   // root of the tree
-    mat4 cur_VM = glm::mat4(1.0f); // modelview at the "world" node is just the view matrix.
+    RTNode *cur = node["world"]; // root of the tree
+    mat4 cur_VM = glm::mat4(1.0f);
 
     dfs_stack.push(cur);
     matrix_stack.push(cur_VM);
@@ -61,7 +61,7 @@ void RTScene::buildTriangleSoup(void)
         {
             // Prepare to draw the geometry. Assign the modelview and the material.
             mat4 curModelView = cur_VM * cur->modeltransforms[i];
-            mat3 invTMV = glm::inverse(glm::transpose(mat3(curModelView)));
+            mat3 invTMV = glm::transpose(glm::inverse(mat3(curModelView)));
             Material *curMat = cur->models[i]->material;
 
             for (Triangle ogTri : cur->models[i]->geometry->elements)

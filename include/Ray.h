@@ -29,7 +29,7 @@ namespace RayTracer
     Ray RayThruPixel(Camera &cam, int i, int j, int width, int height);
     Intersection Intersect(Ray ray, Triangle &triangle);
     Intersection Intersect(Ray ray, RTScene &scene);
-    glm::vec3 FindColor(Intersection hit, int recursion_depth);
+    glm::vec3 FindColor(Intersection hit, RTScene *scene, int recursion_depth);
 
     // Multithreaded Processing
     typedef struct renderTask

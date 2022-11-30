@@ -69,7 +69,8 @@ void initialize(void)
 
     // Initialize image
     image.init();
-    randomPixels(&image);
+    // randomPixels(&image);
+    RayTracer::Raytrace(*(rt_scene.camera), rt_scene, image);
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
@@ -81,7 +82,6 @@ void display(void)
     if (rt_mode)
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        RayTracer::Raytrace(*(rt_scene.camera), rt_scene, image);
         image.draw();
 
         glutSwapBuffers();
@@ -166,6 +166,7 @@ void specialKey(int key, int x, int y)
         break;
     case GLUT_KEY_RIGHT: // right
         scene.camera->rotateRight(-10.0f);
+        std::cout << "RIGHT" << std::endl;
         glutPostRedisplay();
         break;
     case GLUT_KEY_LEFT: // left

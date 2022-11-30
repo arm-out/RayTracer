@@ -107,7 +107,7 @@ void RayTracer::RenderPixel(Ray ray, RTScene *scene, Image *image, int i, int j)
 {
     int w = image->width;
     Intersection hit = Intersect(ray, *scene);
-    image->pixels[j * w + i] = FindColor(hit, 1);
+    image->pixels[j * w + i] = FindColor(hit, scene, 1);
 };
 
 Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
@@ -152,7 +152,7 @@ Intersection RayTracer::Intersect(Ray ray, Triangle &triangle)
 
     Intersection hit;
     hit.P = (l1 * p1) + (l2 * p2) + (l3 * p3);
-    hit.N = glm::normalize((l1 * triangle.N[0]) + (l2 * triangle.N[1]) + (l3 * triangle.N[3]));
+    hit.N = glm::normalize((l1 * triangle.N[0]) + (l2 * triangle.N[1]) + (l3 * triangle.N[2]));
     hit.V = neg_d;
     hit.triangle = &triangle;
     hit.dist = (l1 >= 0.f && l2 >= 0.f && l3 >= 0.f && t >= 0.f) ? t : std::numeric_limits<float>::infinity();
@@ -179,12 +179,48 @@ Intersection RayTracer::Intersect(Ray ray, RTScene &scene)
     return hit;
 };
 
-glm::vec3 RayTracer::FindColor(Intersection hit, int recursion_depth)
+glm::vec3 RayTracer::FindColor(Intersection hit, RTScene *scene, int recursion_depth)
 {
     if (hit.dist != std::numeric_limits<float>::infinity())
     { // Intersection exists
-        // std::cout << "Color Black" << std::endl;
-        return 0.5f * hit.N + 0.5f;
+        glm::vec4 color;
+
+        // Material properties
+        glm::vec4 ambient = hit.triangle->material->ambient;
+        glm::vec4 diffuse = hit.triangle->material->diffuse;
+        glm::vec4 specular = hit.triangle->material->specular;
+        glm::vec4 emision = hit.triangle->material->emision;
+        float shininess = hit.triangle->material->shininess;
+
+        // Lights
+        std::map<std::string, Light *> lights = scene->light;
+        std::vector<glm::vec4> lightpositions;
+        std::vector<glm::vec4> lightcolors;
+
+        for (auto light : lights)
+        {
+            lightpositions.push_back(light.second->position);
+            lightcolors.push_back(light.second->color);
+        }
+
+        color = emision;
+
+        for (int i = 0; i < lights.size(); i++)
+        {
+            glm::vec4 light_pos = lightpositions[i];
+            glm::vec4 light_color = lightcolors[i];
+
+            glm::vec3 light_dir = glm::normalize(glm::vec3(light_pos) - (light_pos.w * hit.P));
+            float Lambertian = glm::max(glm::dot(hit.N, light_dir), 0.0f);
+
+            glm::vec3 view_dir = glm::normalize(glm::vec3(0.0f, 1.0f, 5.0f) - hit.P);
+            glm::vec3 half_dir = glm::normalize(light_dir + view_dir);
+            float BlinnPhong = glm::pow(glm::max(glm::dot(hit.N, half_dir), 0.0f), shininess);
+
+            color += (ambient + diffuse * Lambertian + specular * BlinnPhong) * light_color;
+        }
+
+        return color;
     }
     else
     {
