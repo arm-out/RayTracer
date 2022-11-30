@@ -1,25 +1,113 @@
+#include <queue>
+#include <pthread.h>
 #include "Ray.h"
 #include "progressbar.hpp"
 
 using namespace RayTracer;
 
+#define THREAD_NUM 8
+
+std::queue<renderTask> taskQueue;
+pthread_mutex_t mutex;
+pthread_cond_t condQueue;
+int numJobs;
+progressbar bar;
+
 void RayTracer::Raytrace(Camera &cam, RTScene &scene, Image &image)
 {
+    pthread_t th[THREAD_NUM];
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&condQueue, NULL);
+    numJobs = image.width * image.height;
+    bar.set_niter(numJobs);
+    for (int i = 0; i < THREAD_NUM; i++)
+    {
+        if (pthread_create(&th[i], NULL, &startThread, NULL) != 0)
+        {
+            perror("Failed to create thread");
+        }
+    }
+
     int w = image.width;
     int h = image.height;
-    progressbar bar(h);
+    auto start = std::chrono::high_resolution_clock::now();
+
     for (int j = 0; j < h; j++)
     {
-        // std::cout << "Row " << j << "/" << h << std::endl;
-        bar.update();
         for (int i = 0; i < w; i++)
         {
             Ray ray = RayThruPixel(cam, i, j, w, h);
-            Intersection hit = Intersect(ray, scene);
-            image.pixels[j * w + i] = FindColor(hit, 1);
+            // Create task
+            renderTask t = {
+                .renderFunction = &RenderPixel,
+                .scene = &scene,
+                .image = &image,
+                .ray = ray,
+                .i = i,
+                .j = j};
+            // Submit task
+            submitTask(t);
         }
     }
+
+    for (int i = 0; i < THREAD_NUM; i++)
+    {
+        if (pthread_join(th[i], NULL) != 0)
+        {
+            perror("Failed to join thread");
+        }
+    }
+
     std::cout << std::endl;
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::cout << "Rendered in " << duration.count() << " seconds" << std::endl;
+
+    bar.reset();
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&condQueue);
+};
+
+void *RayTracer::startThread(void *args)
+{
+    while (numJobs != 0)
+    {
+        renderTask task;
+        pthread_mutex_lock(&mutex);
+
+        while (taskQueue.size() == 0)
+        {
+            pthread_cond_wait(&condQueue, &mutex);
+        }
+
+        task = taskQueue.front();
+        taskQueue.pop();
+        numJobs--;
+        bar.update();
+        pthread_mutex_unlock(&mutex);
+        executeTask(&task);
+    }
+};
+
+void RayTracer::executeTask(renderTask *task)
+{
+    task->renderFunction(task->ray, task->scene, task->image, task->i, task->j);
+};
+
+void RayTracer::submitTask(renderTask task)
+{
+    pthread_mutex_lock(&mutex);
+    taskQueue.push(task);
+    pthread_mutex_unlock(&mutex);
+    pthread_cond_signal(&condQueue);
+}
+
+void RayTracer::RenderPixel(Ray ray, RTScene *scene, Image *image, int i, int j)
+{
+    int w = image->width;
+    Intersection hit = Intersect(ray, *scene);
+    image->pixels[j * w + i] = FindColor(hit, 1);
 };
 
 Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
