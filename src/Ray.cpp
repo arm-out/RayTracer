@@ -106,8 +106,9 @@ void RayTracer::submitTask(renderTask task)
 void RayTracer::RenderPixel(Ray ray, RTScene *scene, Image *image, int i, int j)
 {
     int w = image->width;
+    int h = image->height;
     Intersection hit = Intersect(ray, *scene);
-    image->pixels[j * w + i] = FindColor(hit, scene, 1);
+    image->pixels[(h - j - 1) * w + i] = FindColor(hit, scene, 6);
 };
 
 Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
@@ -126,7 +127,7 @@ Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
     float a = cam.aspect;
     float fovy = cam.fovy * M_PI / 180.0f;
 
-    ray.dir = glm::normalize((alpha * a * glm::tan(fovy / 2.0f) * u) + (-beta * glm::tan(fovy / 2.0f) * v) - w);
+    ray.dir = glm::normalize((alpha * a * glm::tan(fovy / 2.0f) * u) + (beta * glm::tan(fovy / 2.0f) * v) - w);
     return ray;
 };
 
@@ -203,7 +204,12 @@ glm::vec3 RayTracer::FindColor(Intersection hit, RTScene *scene, int recursion_d
             lightcolors.push_back(light.second->color);
         }
 
-        color = emision;
+        // reflected ray
+        glm::vec3 reflected_dir = 2.0f * glm::dot(hit.N, hit.V) * hit.N - hit.V;
+        Ray reflected_ray{
+            .p0 = hit.P + 0.1f * reflected_dir,
+            .dir = reflected_dir};
+        Intersection reflection = Intersect(reflected_ray, *scene);
 
         for (int i = 0; i < lights.size(); i++)
         {
@@ -217,9 +223,32 @@ glm::vec3 RayTracer::FindColor(Intersection hit, RTScene *scene, int recursion_d
             glm::vec3 half_dir = glm::normalize(light_dir + view_dir);
             float BlinnPhong = glm::pow(glm::max(glm::dot(hit.N, half_dir), 0.0f), shininess);
 
-            color += (ambient + diffuse * Lambertian + specular * BlinnPhong) * light_color;
+            glm::vec3 vec_tolight = glm::vec3(light_pos) - (light_pos.w * hit.P);
+            Ray ray_tolight{
+                .p0 = hit.P + 0.1f * light_dir,
+                .dir = light_dir};
+            float dist_tolight = glm::sqrt(glm::dot(vec_tolight, vec_tolight));
+            Intersection shadow = Intersect(ray_tolight, *scene);
+
+            float visibility = shadow.dist < dist_tolight ? 0.0f : 1.0f;
+
+            color = emision;
+            if (recursion_depth == 0 || reflection.dist == std::numeric_limits<float>::infinity())
+            {
+                color += ((diffuse * Lambertian * visibility) + (specular * BlinnPhong)) * light_color;
+            }
+            else
+            {
+                color += (diffuse * light_color * Lambertian * visibility);
+            }
+        };
+
+        if (recursion_depth == 0 || reflection.dist == std::numeric_limits<float>::infinity())
+        {
+            return color;
         }
 
+        color += specular * glm::vec4(FindColor(reflection, scene, recursion_depth - 1), 0);
         return color;
     }
     else
@@ -227,4 +256,4 @@ glm::vec3 RayTracer::FindColor(Intersection hit, RTScene *scene, int recursion_d
         // std::cout << "Color White" << std::endl;
         return glm::vec3(1.0f, 1.0f, 1.0f);
     }
-};
+}
