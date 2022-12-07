@@ -10,18 +10,37 @@ void RTScene::init(void)
 {
     // Create a geometry palette
     geometry["cube"] = new RTCube;
-    geometry["teapot"] = new RTObj;
-    geometry["bunny"] = new RTObj;
     geometry["cube"]->init();
-    geometry["teapot"]->init("models/teapot.obj");
-    geometry["bunny"]->init("models/bunny.obj");
+    geometry["ball"] = new RTObj;
+    geometry["ball"]->init("models/sphere.obj");
+    //    geometry["drag"] = new RTObj;
+    //    geometry["drag"]->init("models/bunny.obj");
 
     // Create a material palette
-    material["wood"] = new Material;
-    material["wood"]->ambient = vec4(0.1f, 0.1f, 0.1f, 1.0f);
-    material["wood"]->diffuse = vec4(0.3f, 0.15f, 0.1f, 1.0f);
-    material["wood"]->specular = vec4(0.3f, 0.15f, 0.1f, 1.0f);
-    material["wood"]->shininess = 100.0f;
+    material["red"] = new Material;
+    material["red"]->ambient = vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    material["red"]->diffuse = vec4(0.5f, 0.0f, 0.0f, 1.0f);
+    material["red"]->specular = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    material["red"]->shininess = 100.0f;
+
+    material["white"] = new Material;
+    material["white"]->ambient = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    material["white"]->diffuse = vec4(0.725f, 0.71f, 0.68f, 1.0f);
+    material["white"]->specular = vec4(0.72f, 0.71f, 0.68f, 1.0f);
+    material["white"]->shininess = 100.0f;
+
+    material["green"] = new Material;
+    material["green"]->ambient = vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    material["green"]->diffuse = vec4(0.0f, 0.5f, 0.0f, 1.0f);
+    material["green"]->specular = vec4(0.0f, 0.5f, 0.0f, 1.0f);
+    material["green"]->shininess = 100.0f;
+
+    material["bulb"] = new Material;
+    material["bulb"]->ambient = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    material["bulb"]->diffuse = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    material["bulb"]->specular = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    material["bulb"]->emision = vec4(1.0f, 0.2f, 0.1f, 1.0f);
+    material["bulb"]->shininess = 200.0f;
 
     material["ceramic"] = new Material;
     material["ceramic"]->ambient = vec4(0.02f, 0.07f, 0.2f, 1.0f);
@@ -35,92 +54,91 @@ void RTScene::init(void)
     material["silver"]->specular = vec4(0.9f, 0.9f, 0.9f, 1.0f);
     material["silver"]->shininess = 50.0f;
 
-    material["turquoise"] = new Material;
-    material["turquoise"]->ambient = vec4(0.1f, 0.2f, 0.17f, 1.0f);
-    material["turquoise"]->diffuse = vec4(0.2f, 0.375f, 0.35f, 1.0f);
-    material["turquoise"]->specular = vec4(0.3f, 0.3f, 0.3f, 1.0f);
-    material["turquoise"]->shininess = 100.0f;
-
-    material["bulb"] = new Material;
-    material["bulb"]->ambient = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    material["bulb"]->diffuse = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    material["bulb"]->specular = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    material["bulb"]->emision = vec4(1.0f, 0.2f, 0.1f, 1.0f);
-    material["bulb"]->shininess = 200.0f;
+    material["wood"] = new Material;
+    material["wood"]->ambient = vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    material["wood"]->diffuse = vec4(0.3f, 0.15f, 0.1f, 1.0f);
+    material["wood"]->specular = vec4(0.3f, 0.15f, 0.1f, 1.0f);
+    material["wood"]->shininess = 100.0f;
 
     // Create a model palette
-    model["teapot1"] = new RTModel;
-    model["teapot1"]->geometry = geometry["teapot"];
-    model["teapot1"]->material = material["silver"];
-    model["teapot2"] = new RTModel;
-    model["teapot2"]->geometry = geometry["teapot"];
-    model["teapot2"]->material = material["ceramic"];
-    model["table piece"] = new RTModel;
-    model["table piece"]->geometry = geometry["cube"];
-    model["table piece"]->material = material["wood"];
-
-    model["bunny"] = new RTModel;
-    model["bunny"]->geometry = geometry["bunny"];
-    model["bunny"]->material = material["turquoise"];
-
-    model["bulb"] = new RTModel;
-    model["bulb"]->geometry = geometry["cube"];
-    model["bulb"]->material = material["bulb"];
+    model["floor"] = new RTModel;
+    model["floor"]->geometry = geometry["cube"];
+    model["floor"]->material = material["white"];
+    model["redwall"] = new RTModel;
+    model["redwall"]->geometry = geometry["cube"];
+    model["redwall"]->material = material["red"];
+    model["greenwall"] = new RTModel;
+    model["greenwall"]->geometry = geometry["cube"];
+    model["greenwall"]->material = material["green"];
+    model["backwall"] = new RTModel;
+    model["backwall"]->geometry = geometry["cube"];
+    model["backwall"]->material = material["white"];
+    model["ceiling"] = new RTModel;
+    model["ceiling"]->geometry = geometry["cube"];
+    model["ceiling"]->material = material["white"];
+    model["tall"] = new RTModel;
+    model["tall"]->geometry = geometry["cube"];
+    model["tall"]->material = material["silver"];
+    model["short"] = new RTModel;
+    model["short"]->geometry = geometry["cube"];
+    model["short"]->material = material["white"];
+    model["ball"] = new RTModel;
+    model["ball"]->geometry = geometry["ball"];
+    model["ball"]->material = material["wood"];
 
     // Create a light palette
-    light["sun"] = new Light;
-    light["sun"]->position = vec4(3.0f, 2.0f, 1.0f, 0.0f);
-    light["sun"]->color = 1.0f * vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
     light["bulb"] = new Light;
-    light["bulb"]->position = vec4(0.0f, 2.0f, 0.0f, 0.0f);
-    light["bulb"]->color = 1.5f * vec4(1.0f, 0.2f, 0.1f, 1.0f);
+    light["bulb"]->position = vec4(0.0f, 1.8f, -1.0f, 1.0f);
+    light["bulb"]->color = 2.0f * vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Build the scene graph
-    node["table"] = new RTNode;
-    node["table top"] = new RTNode;
-    node["table leg"] = new RTNode;
-    node["teapot1"] = new RTNode;
-    node["teapot2"] = new RTNode;
-    node["bunny"] = new RTNode;
+    node["floor"] = new RTNode;
+    node["redwall"] = new RTNode;
+    node["greenwall"] = new RTNode;
+    node["backwall"] = new RTNode;
+    node["ceiling"] = new RTNode;
+    node["tall"] = new RTNode;
+    node["short"] = new RTNode;
+    node["ball"] = new RTNode;
 
-    node["table"]->childnodes.push_back(node["table top"]);
-    node["table"]->childtransforms.push_back(translate(vec3(0.0f, 1.2f, 0.0f)));
-    node["table"]->childnodes.push_back(node["table leg"]);
-    node["table"]->childtransforms.push_back(translate(vec3(-0.9f, 0.0f, -0.4f)));
-    node["table"]->childnodes.push_back(node["table leg"]);
-    node["table"]->childtransforms.push_back(translate(vec3(-0.9f, 0.0f, 0.4f)));
-    node["table"]->childnodes.push_back(node["table leg"]);
-    node["table"]->childtransforms.push_back(translate(vec3(0.9f, 0.0f, 0.4f)));
-    node["table"]->childnodes.push_back(node["table leg"]);
-    node["table"]->childtransforms.push_back(translate(vec3(0.9f, 0.0f, -0.4f)));
+    node["floor"]->models.push_back(model["floor"]);
+    node["floor"]->modeltransforms.push_back(scale(vec3(5.0f, 0.1f, 4.0f)));
 
-    node["table leg"]->models.push_back(model["table piece"]);
-    node["table leg"]->modeltransforms.push_back(translate(vec3(0.0f, 0.5f, 0.0f)) * scale(vec3(0.2f, 1.0f, 0.2f)));
+    node["redwall"]->models.push_back(model["redwall"]);
+    node["redwall"]->modeltransforms.push_back(scale(vec3(0.1f, 2.7f, 4.0f)));
 
-    node["table top"]->models.push_back(model["table piece"]);
-    node["table top"]->modeltransforms.push_back(translate(vec3(0.0f, -0.1f, 0.0f)) * scale(vec3(2.0f, 0.2f, 1.0f)));
-    node["table top"]->childnodes.push_back(node["teapot1"]);
-    node["table top"]->childtransforms.push_back(translate(vec3(-0.5f, 0.0f, 0.0f)));
-    node["table top"]->childnodes.push_back(node["teapot2"]);
-    node["table top"]->childtransforms.push_back(translate(vec3(0.5f, 0.0f, 0.0f)) * rotate(-120.0f * float(M_PI) / 180.0f, vec3(0.0f, 1.0f, 0.0f)));
+    node["greenwall"]->models.push_back(model["greenwall"]);
+    node["greenwall"]->modeltransforms.push_back(scale(vec3(0.1f, 2.7f, 4.0f)));
 
-    node["teapot1"]->models.push_back(model["teapot1"]);
-    node["teapot1"]->modeltransforms.push_back(scale(vec3(0.5f)));
-    node["teapot2"]->models.push_back(model["teapot2"]);
-    node["teapot2"]->modeltransforms.push_back(scale(vec3(1.0f, 1.5f, 1.0f)) * scale(vec3(0.5f)));
+    node["backwall"]->models.push_back(model["backwall"]);
+    node["backwall"]->modeltransforms.push_back(scale(vec3(5.0f, 2.7f, 0.1f)));
 
-    node["bunny"]->models.push_back(model["bunny"]);
-    node["bunny"]->modeltransforms.push_back(scale(vec3(0.8f)) * translate(vec3(0.0f, 1.0f, 0.0f)));
+    node["ceiling"]->models.push_back(model["ceiling"]);
+    node["ceiling"]->modeltransforms.push_back(scale(vec3(5.0f, 0.1f, 4.0f)));
 
-    node["world"]->childnodes.push_back(node["table"]);
-    node["world"]->childtransforms.push_back(mat4(1.0f));
+    node["tall"]->models.push_back(model["tall"]);
+    node["tall"]->modeltransforms.push_back(scale(vec3(1.0f, 2.0f, 1.0f)));
+    node["short"]->models.push_back(model["short"]);
+    node["short"]->modeltransforms.push_back(scale(vec3(1.0f)));
+    node["ball"]->models.push_back(model["ball"]);
+    node["ball"]->modeltransforms.push_back(scale(vec3(0.25f, 0.25f, 0.25f)));
 
-    node["world"]->childnodes.push_back(node["bunny"]);
-    node["world"]->childtransforms.push_back(translate(vec3(-1.8f, 0.0f, 0.0f)) * rotate(90.0f * float(M_PI) / 180.0f, vec3(0.0f, 1.0f, 0.0f)));
-
-    node["world"]->models.push_back(model["bulb"]);
-    node["world"]->modeltransforms.push_back(translate(vec3(0.0f, 2.0f, 0.0f)) * scale(vec3(0.1f)));
+    node["world"]->childnodes.push_back(node["floor"]);
+    node["world"]->childtransforms.push_back(translate(vec3(0.0f, -0.34f, -1.8f)));
+    node["world"]->childnodes.push_back(node["redwall"]);
+    node["world"]->childtransforms.push_back(translate(vec3(-1.78f, 1.0f, -1.8f)));
+    node["world"]->childnodes.push_back(node["greenwall"]);
+    node["world"]->childtransforms.push_back(translate(vec3(1.78f, 1.0f, -1.8f)));
+    node["world"]->childnodes.push_back(node["backwall"]);
+    node["world"]->childtransforms.push_back(translate(vec3(0.0f, 1.0f, -3.35f)));
+    node["world"]->childnodes.push_back(node["ceiling"]);
+    node["world"]->childtransforms.push_back(translate(vec3(0.0f, 2.35f, -1.8f)));
+    node["world"]->childnodes.push_back(node["tall"]);
+    node["world"]->childtransforms.push_back(translate(vec3(-0.6f, 0.3f, -1.9f)) * rotate(18.0f * float(M_PI) / 180.0f, vec3(0.0f, 1.0f, 0.0f)));
+    node["world"]->childnodes.push_back(node["short"]);
+    node["world"]->childtransforms.push_back(translate(vec3(0.6f, 0.0f, -0.8f)) * rotate(-13.0f * float(M_PI) / 180.0f, vec3(0.0f, 1.0f, 0.0f)));
+    node["world"]->childnodes.push_back(node["ball"]);
+    node["world"]->childtransforms.push_back(translate(vec3(-0.3f, -0.1f, -1.0f)));
 
     // Put a camera
     camera = new Camera;

@@ -1,11 +1,16 @@
 #include <queue>
 #include <pthread.h>
+#include <random>
 #include "Ray.h"
 #include "progressbar.hpp"
 
 using namespace RayTracer;
 
 #define THREAD_NUM 8
+#define NUM_SAMPLES 100
+#define LAMBDA 0.33f
+#define DIFFUSE 0.5f
+#define GLOBAL_ILLUM 1
 
 std::queue<renderTask> taskQueue;
 pthread_mutex_t mutex;
@@ -32,17 +37,17 @@ void RayTracer::Raytrace(Camera &cam, RTScene &scene, Image &image)
     int h = image.height;
     auto start = std::chrono::high_resolution_clock::now();
 
+    // height width
     for (int j = 0; j < h; j++)
     {
         for (int i = 0; i < w; i++)
         {
-            Ray ray = RayThruPixel(cam, i, j, w, h);
             // Create task
             renderTask t = {
                 .renderFunction = &RenderPixel,
+                .cam = &cam,
                 .scene = &scene,
                 .image = &image,
-                .ray = ray,
                 .i = i,
                 .j = j};
             // Submit task
@@ -69,46 +74,12 @@ void RayTracer::Raytrace(Camera &cam, RTScene &scene, Image &image)
     pthread_cond_destroy(&condQueue);
 };
 
-void *RayTracer::startThread(void *args)
-{
-    while (numJobs != 0)
-    {
-        renderTask task;
-        pthread_mutex_lock(&mutex);
-
-        while (taskQueue.size() == 0)
-        {
-            pthread_cond_wait(&condQueue, &mutex);
-        }
-
-        task = taskQueue.front();
-        taskQueue.pop();
-        numJobs--;
-        bar.update();
-        pthread_mutex_unlock(&mutex);
-        executeTask(&task);
-    }
-};
-
-void RayTracer::executeTask(renderTask *task)
-{
-    task->renderFunction(task->ray, task->scene, task->image, task->i, task->j);
-};
-
-void RayTracer::submitTask(renderTask task)
-{
-    pthread_mutex_lock(&mutex);
-    taskQueue.push(task);
-    pthread_mutex_unlock(&mutex);
-    pthread_cond_signal(&condQueue);
-}
-
-void RayTracer::RenderPixel(Ray ray, RTScene *scene, Image *image, int i, int j)
+void RayTracer::RenderPixel(Camera *cam, RTScene *scene, Image *image, int i, int j)
 {
     int w = image->width;
     int h = image->height;
-    Intersection hit = Intersect(ray, *scene);
-    image->pixels[(h - j - 1) * w + i] = FindColor(hit, scene, 6);
+    glm::vec3 pixel_color = FindColor(cam, scene, i, j, w, h);
+    image->pixels[(h - j - 1) * w + i] = pixel_color;
 };
 
 Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
@@ -121,8 +92,12 @@ Ray RayTracer::RayThruPixel(Camera &cam, int i, int j, int width, int height)
     glm::vec3 u = glm::normalize(glm::cross(cam.up, w));
     glm::vec3 v = glm::cross(w, u);
 
-    float alpha = 2.0f * (static_cast<float>(i + 0.5) / static_cast<float>(width)) - 1.0f;
-    float beta = 1.0f - 2.0f * (static_cast<float>(j + 0.5) / static_cast<float>(height));
+    // Random ray offset
+    float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+    float alpha = 2.0f * (static_cast<float>(i + x) / static_cast<float>(width)) - 1.0f;
+    float beta = 1.0f - 2.0f * (static_cast<float>(j + y) / static_cast<float>(height));
 
     float a = cam.aspect;
     float fovy = cam.fovy * M_PI / 180.0f;
@@ -180,80 +155,191 @@ Intersection RayTracer::Intersect(Ray ray, RTScene &scene)
     return hit;
 };
 
-glm::vec3 RayTracer::FindColor(Intersection hit, RTScene *scene, int recursion_depth)
+glm::vec3 RayTracer::FindColor(Camera *cam, RTScene *scene, int i, int j, int w, int h)
 {
-    if (hit.dist != std::numeric_limits<float>::infinity())
-    { // Intersection exists
-        glm::vec4 color;
+    glm::vec3 color_acc = glm::vec3(0.0f, 0.0f, 0.0f);
 
-        // Material properties
-        glm::vec4 ambient = hit.triangle->material->ambient;
-        glm::vec4 diffuse = hit.triangle->material->diffuse;
-        glm::vec4 specular = hit.triangle->material->specular;
-        glm::vec4 emision = hit.triangle->material->emision;
-        float shininess = hit.triangle->material->shininess;
+    // Multisampling
+    for (int k = 0; k < NUM_SAMPLES; k++)
+    {
+        glm::vec3 color = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 total_weight = glm::vec3(1.0f, 1.0f, 1.0f);
+        float factor = 1.0f;
+        int path_len = 1;
 
-        // Lights
-        std::map<std::string, Light *> lights = scene->light;
-        std::vector<glm::vec4> lightpositions;
-        std::vector<glm::vec4> lightcolors;
+        Ray ray = RayThruPixel(*cam, i, j, w, h);
 
-        for (auto light : lights)
+        while (1)
         {
-            lightpositions.push_back(light.second->position);
-            lightcolors.push_back(light.second->color);
-        }
+            Intersection hit = Intersect(ray, *scene);
+            if (hit.dist == std::numeric_limits<float>::infinity())
+            { // No hit
+                break;
+            }
 
-        // reflected ray
-        glm::vec3 reflected_dir = 2.0f * glm::dot(hit.N, hit.V) * hit.N - hit.V;
-        Ray reflected_ray{
-            .p0 = hit.P + 0.1f * reflected_dir,
-            .dir = reflected_dir};
-        Intersection reflection = Intersect(reflected_ray, *scene);
+            Material *hit_mat = hit.triangle->material;
+            bool terminate = rand() < (RAND_MAX * LAMBDA);
 
-        for (int i = 0; i < lights.size(); i++)
-        {
-            glm::vec4 light_pos = lightpositions[i];
-            glm::vec4 light_color = lightcolors[i];
-
-            glm::vec3 light_dir = glm::normalize(glm::vec3(light_pos) - (light_pos.w * hit.P));
-            float Lambertian = glm::max(glm::dot(hit.N, light_dir), 0.0f);
-
-            glm::vec3 view_dir = glm::normalize(glm::vec3(0.0f, 1.0f, 5.0f) - hit.P);
-            glm::vec3 half_dir = glm::normalize(light_dir + view_dir);
-            float BlinnPhong = glm::pow(glm::max(glm::dot(hit.N, half_dir), 0.0f), shininess);
-
-            glm::vec3 vec_tolight = glm::vec3(light_pos) - (light_pos.w * hit.P);
-            Ray ray_tolight{
-                .p0 = hit.P + 0.1f * light_dir,
-                .dir = light_dir};
-            float dist_tolight = glm::sqrt(glm::dot(vec_tolight, vec_tolight));
-            Intersection shadow = Intersect(ray_tolight, *scene);
-
-            float visibility = shadow.dist < dist_tolight ? 0.0f : 1.0f;
-
-            color = emision;
-            if (recursion_depth == 0 || reflection.dist == std::numeric_limits<float>::infinity())
-            {
-                color += ((diffuse * Lambertian * visibility) + (specular * BlinnPhong)) * light_color;
+            if (terminate)
+            { // Final bounce
+                factor *= LAMBDA;
+                color += total_weight * (glm::vec3(hit_mat->emision) + finalHitColor(hit, scene, path_len));
+                break;
             }
             else
-            {
-                color += (diffuse * light_color * Lambertian * visibility);
-            }
-        };
+            { // Next bounce
+                path_len++;
+                factor *= (1 - LAMBDA);
+                color += total_weight * glm::vec3(hit_mat->emision);
 
-        if (recursion_depth == 0 || reflection.dist == std::numeric_limits<float>::infinity())
-        {
-            return color;
+                if (rand() < (RAND_MAX * DIFFUSE))
+                { // Diffuse bounce
+                    total_weight *= glm::vec3(hit_mat->diffuse);
+                    ray = diffuseRay(hit);
+                }
+                else
+                { // Specular bounce
+                    total_weight *= glm::vec3(hit_mat->specular);
+                    ray = specularRay(hit);
+                }
+            }
         }
 
-        color += specular * glm::vec4(FindColor(reflection, scene, recursion_depth - 1), 0);
-        return color;
+        color_acc += color / factor;
     }
-    else
+
+    color_acc /= NUM_SAMPLES;
+    return color_acc;
+};
+
+glm::vec3 RayTracer::finalHitColor(Intersection hit, RTScene *scene, int path_len)
+{
+    glm::vec3 color = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    // Material properties
+    glm::vec3 diffuse = glm::vec3(hit.triangle->material->diffuse);
+
+    // Lights
+    std::map<std::string, Light *> lights = scene->light;
+    std::vector<glm::vec3> lightpositions;
+    std::vector<glm::vec3> lightcolors;
+
+    for (auto light : lights)
     {
-        // std::cout << "Color White" << std::endl;
-        return glm::vec3(1.0f, 1.0f, 1.0f);
+        lightpositions.push_back(glm::vec3(light.second->position));
+        lightcolors.push_back(glm::vec3(light.second->color));
     }
+
+    for (int i = 0; i < lights.size(); i++)
+    {
+        glm::vec3 light_pos = lightpositions[i];
+        glm::vec3 light_color = lightcolors[i];
+        float dist_tolight = glm::length(light_pos - hit.P);
+
+        glm::vec3 light_dir = glm::normalize(light_pos - hit.P);
+        float Lambertian = glm::max(glm::dot(hit.N, light_dir), 0.0f);
+
+        Ray shadow_ray = shadowRay(hit, light_dir);
+        Intersection shadow = Intersect(shadow_ray, *scene);
+
+        bool visible = shadow.dist < dist_tolight ? false : true;
+        if (visible)
+        {
+            glm::vec3 L_cum = glm::vec3(0.0f, 0.0f, 0.0f);
+            L_cum += diffuse * Lambertian;
+            float attenuation = glm::pow(dist_tolight, 1);
+            // float attenuation = 1.0f;
+            L_cum /= attenuation;
+            color += L_cum;
+        }
+    }
+
+    return color;
+};
+
+Ray RayTracer::diffuseRay(Intersection hit)
+{
+    // world up vector
+    glm::vec3 up(0.0f, 0.0f, 0.0f);
+
+    // Cosine weighted hemisphere sampling
+    float s = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float t = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float u = 2 * glm::pi<float>() * s;
+    float v = glm::sqrt(1.0f - t);
+
+    glm::vec3 d(v * glm::cos(u), glm::sqrt(t), v * glm::sin(u));
+
+    // Rotate hemisphere acc to surface normal
+    if (hit.N == -1.0f * up)
+    { // Same direction
+        d = -1.0f * d;
+    }
+    else if (hit.N != up)
+    { // Rotate ray
+        float angle = glm::cos(glm::dot(hit.N, up));
+        glm::vec3 axis = glm::cross(hit.N, up);
+        glm::mat4 rotateMatrix = glm::rotate(glm::mat4(), angle, axis);
+        d = glm::normalize(glm::vec3(rotateMatrix * glm::vec4(d, 0.0f)));
+    }
+
+    glm::vec3 offset_pos = hit.P + 0.01f * d;
+    Ray ray{
+        .p0 = offset_pos,
+        .dir = d};
+
+    return ray;
+}
+Ray RayTracer::specularRay(Intersection hit)
+{
+    glm::vec3 d = 2.0f * glm::dot(hit.N, hit.V) * hit.N - hit.V;
+    glm::vec3 offset_pos = hit.P + 0.01f * d;
+    Ray ray{
+        .p0 = offset_pos,
+        .dir = d};
+
+    return ray;
+}
+Ray RayTracer::shadowRay(Intersection hit, glm::vec3 light_dir)
+{
+    glm::vec3 offset_pos = hit.P + 0.01f * light_dir;
+    Ray ray{
+        .p0 = offset_pos,
+        .dir = light_dir};
+
+    return ray;
+}
+
+void *RayTracer::startThread(void *args)
+{
+    while (numJobs != 0)
+    {
+        renderTask task;
+        pthread_mutex_lock(&mutex);
+
+        while (taskQueue.size() == 0)
+        {
+            pthread_cond_wait(&condQueue, &mutex);
+        }
+
+        task = taskQueue.front();
+        taskQueue.pop();
+        numJobs--;
+        bar.update();
+        pthread_mutex_unlock(&mutex);
+        executeTask(&task);
+    }
+};
+
+void RayTracer::executeTask(renderTask *task)
+{
+    task->renderFunction(task->cam, task->scene, task->image, task->i, task->j);
+};
+
+void RayTracer::submitTask(renderTask task)
+{
+    pthread_mutex_lock(&mutex);
+    taskQueue.push(task);
+    pthread_mutex_unlock(&mutex);
+    pthread_cond_signal(&condQueue);
 }
