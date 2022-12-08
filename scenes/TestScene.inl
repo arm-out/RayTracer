@@ -1,9 +1,9 @@
 /**************************************************
 Scene.inl contains the definition of the scene graph
 *****************************************************/
-// #include "Scene.h"
-// #include "Cube.h"
-// #include "Obj.h"
+#include "Scene.h"
+#include "Cube.h"
+#include "Obj.h"
 
 using namespace glm;
 void Scene::init(void)

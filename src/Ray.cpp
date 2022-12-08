@@ -7,8 +7,8 @@
 using namespace RayTracer;
 
 #define THREAD_NUM 8
-#define NUM_SAMPLES 100
-#define LAMBDA 0.33f
+#define NUM_SAMPLES 1000
+#define LAMBDA 0.5f
 #define DIFFUSE 0.5f
 #define GLOBAL_ILLUM 1
 
@@ -247,8 +247,8 @@ glm::vec3 RayTracer::finalHitColor(Intersection hit, RTScene *scene, int path_le
         {
             glm::vec3 L_cum = glm::vec3(0.0f, 0.0f, 0.0f);
             L_cum += diffuse * Lambertian;
-            float attenuation = glm::pow(dist_tolight, 1);
-            // float attenuation = 1.0f;
+            float attenuation = dist_tolight * 0.5f;
+            // float attenuation = 1.2f;
             L_cum /= attenuation;
             color += L_cum;
         }
