@@ -12,10 +12,11 @@ To begin with, we want to be able to display images. Since I am using the openGL
 
 <figure>
   <center>
-  <img src="file:///Users/armin/Documents/RayTracer/screenshots/image_test.png?msec=1670433454733" alt="img" style="zoom:33%;" />
+  <img src="./screenshots/image_test.png?msec=1670433454733" alt="img" style="zoom:33%;" />
   <figcaption>Random Pixel Render</figcaption>
     </center>
 </figure>
+
 ### Ray Casting
 
 Now that we have a way of displaying images to our screen, we want to set the right color for each pixel on our image. For each pixel, we will shoot a ray from our camera point onto the center of the pixel. For this ray, we would need its position of origin, and the direction. The ray's position $p_0$ would be that of the camera but to get the direction of the ray through the center of the pixel, we would need to calculate the camera's $\textbf{u}$, $\textbf{v}$ and $\textbf{w}$ vectors

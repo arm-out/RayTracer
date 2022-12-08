@@ -247,7 +247,7 @@ glm::vec3 RayTracer::finalHitColor(Intersection hit, RTScene *scene, int path_le
         {
             glm::vec3 L_cum = glm::vec3(0.0f, 0.0f, 0.0f);
             L_cum += diffuse * Lambertian;
-            float attenuation = dist_tolight * 0.5f;
+            float attenuation = dist_tolight * 0.63f;
             // float attenuation = 1.2f;
             L_cum /= attenuation;
             color += L_cum;
