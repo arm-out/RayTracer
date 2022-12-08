@@ -80,7 +80,7 @@ $$
 
 If $\lambda_1, \lambda_2, \lambda_3,t \ge 0$, we have an intersection with distance between $\textbf{p}_0$ and $\textbf{q}$ being $t$.
 
-There will be cases where there would be different geometry infront of each other, resulting in multiple intersections per ray. In that case, we can take the closes intersection as we don't need to worry about the geometry behind since it would be convered anyways and we don't need to display its color. Once we get the intersections, we can color the pixels based on the normal of the geometry and get a silhouette of the scene
+There will be cases where there would be different geometry in front of each other, resulting in multiple intersections per ray. In that case, we can take the closes intersection as we don't need to worry about the geometry behind since it would be covered anyways and we don't need to display its color. Once we get the intersections, we can color the pixels based on the normal of the geometry and get a silhouette of the scene
 
 ![silhouette](./screenshots/silhouette.png)
 
@@ -128,7 +128,7 @@ I am also in the process of implementing bounding volume hierarchies (BVH trees)
 
 ### Multisampling and Anti-Aliasing
 
-One thing that kept bothering me in the above render is the fact that the edges were always jagged and pixelated. Inorder to smoothen out the image, I would need more than one ray for each pixel to sample the surrounding area and average out the color values for the pixel. Instead of shooting a ray through the center of each pixel, I now shoot multiple rays randomized throught the square bounded by the pixel and average out the colors returned by them.
+One thing that kept bothering me in the above render is the fact that the edges were always jagged and pixelated. In order to smoothen out the image, I would need more than one ray for each pixel to sample the surrounding area and average out the color values for the pixel. Instead of shooting a ray through the center of each pixel, I now shoot multiple rays randomized through the square bounded by the pixel and average out the colors returned by them.
 
 ### Monte Carlo Path Tracing
 
@@ -146,7 +146,7 @@ $$
                 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  +
 (1-\lambda)^3\lambda \cdot\text{TotalColorFromPhotonsWithThreeBounce}_{ij} \\  \  + \ ... \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
-Note that because we introduce the term $(1-\lambda)^{n-1} \lambda$, we will have to multiply the Color from each path by the factor of $\frac{1}{(1-\lambda)^n\lambda}$ inorder for the function to unfold into the original formula.
+Note that because we introduce the term $(1-\lambda)^{n-1} \lambda$, we will have to multiply the Color from each path by the factor of $\frac{1}{(1-\lambda)^n\lambda}$ in order for the function to unfold into the original formula.
 
 ### Global Illumination
 
@@ -226,7 +226,7 @@ All the materials in the Cornell Box thus far have been perfectly lambertian mat
   <figcaption> Left and Middle: Silver tall box = 1, Right: Reflective Walls (with light attenuation)</figcaption>
 </figure>
 
-In the image on the left, you can very clearly see the almost perfect reflective surface of the tall box showing a mirrored image of the wooden short box infront of it. The middle image has the tall box slight rotated so that you can see the green wall also reflected onto it. The right image has every surface being slightly reflective, and you can see the recursive "infinite reflection" phenomonon happening as the tall box reflects the shortbox, along with all the reflections between them. The walls now show the reflections of the room tinted according to their material color.
+In the image on the left, you can very clearly see the almost perfect reflective surface of the tall box showing a mirrored image of the wooden short box infront of it. The middle image has the tall box slight rotated so that you can see the green wall also reflected onto it. The right image has every surface being slightly reflective, and you can see the recursive "infinite reflection" phenomenon happening as the tall box reflects the short-box, along with all the reflections between them. The walls now show the reflections of the room tinted according to their material color.
 
 #### Comparisons Against Rasterized Image
 

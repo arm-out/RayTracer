@@ -7,7 +7,7 @@
 using namespace RayTracer;
 
 #define THREAD_NUM 8
-#define NUM_SAMPLES 1000
+#define NUM_SAMPLES 100
 #define LAMBDA 0.5f
 #define DIFFUSE 0.5f
 #define GLOBAL_ILLUM 1

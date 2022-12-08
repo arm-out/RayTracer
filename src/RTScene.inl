@@ -91,7 +91,7 @@ void RTScene::init(void)
     model["tall"]->material = material["silver"];
     model["short"] = new RTModel;
     model["short"]->geometry = geometry["cube"];
-    model["short"]->material = material["wood"];
+    model["short"]->material = material["silver"];
     // model["ball"] = new RTModel;
     // model["ball"]->geometry = geometry["ball"];
     // model["ball"]->material = material["wood"];
