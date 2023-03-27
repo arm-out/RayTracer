@@ -1,4 +1,4 @@
-# Project 4: Ray Tracer
+# Ray Tracer
 
 ## Introduction
 
@@ -36,12 +36,13 @@ $$
 Once we have the vectors that make up the Camera matrix, we can calculate the center of the pixel along the normalized device coordinate space as follows
 
 <img src="./images/screen_ij.png" style="zoom: 33%;" />
-$$
-\alpha = 2 \cdot \frac{i + 0.5}{width} - 1\\
-\beta = 1 - 2\cdot \frac{j + 0.5}{height}\\
 
+$$
+\alpha = 2\cdot \frac{i + 0.5}{width} - 1\\ \beta = 1 - 2\cdot \frac{j + 0.5}{height}\\
 \text{ray direction }\textbf{d} = normalize(\alpha \cdot a\cdot\tan(\frac{fovy}{2})\textbf{u}+\beta\cdot\tan{(\frac{fovy}{2})}\textbf{v} - \textbf{w} )
 $$
+
+
 
 ### Intersection
 
@@ -52,27 +53,31 @@ Once we have our populated `triangle_soup`, we can now iterate through each pixe
 <img src="./images/int.png" alt="int" style="zoom:20%;" />
 
 We can thus solve the folowing system of equations to compute the barycentric point $\textbf{q}$
+
 $$
 \begin{bmatrix}
-    \vert & \vert & \vert & \vert \\
-    \textbf{p}_1 & \textbf{p}_2 & \textbf{p}_3 & -\textbf{d}   \\
-    \vert & \vert & \vert & \vert \\
-    1 & 1 & 1 & 0
+ \vert & \vert & \vert & \vert \\
+ \textbf{p}_1 & \textbf{p}_2 & \textbf{p}_3 & -\textbf{d} \\
+ \vert & \vert & \vert & \vert \\
+ 1 & 1 & 1 & 0
 \end{bmatrix}
 \begin{bmatrix}
-    \lambda_1 \\
-    \lambda_2 \\
-    \lambda_3 \\
-    t \\
+ \lambda_1 \\
+ \lambda_2 \\
+ \lambda_3 \\
+ t \\
 \end{bmatrix}
 
 = \begin{bmatrix}
-    \vert \\
-    \textbf{p}_0 \\
-    \vert \\
-    1 \\
+ \vert \\
+ \textbf{p}_0 \\
+ \vert \\
+ 1 \\
 \end{bmatrix}
 $$
+
+
+
 
 $$
 \textbf{q} = \lambda_1\textbf{p}_1 + \lambda_2\textbf{p}_2 + \lambda_3\textbf{p}_3
@@ -87,9 +92,11 @@ There will be cases where there would be different geometry in front of each oth
 ### Image Shading
 
 We now have all the tools we need to compute colors based on the Blinn-Phong shading equation
+
 $$
 Color = \textbf{C}_\text{emission} + \sum_{i = 1}^{lights}(\textbf{C}_\text{ambient} + \textbf{C}_\text{diffuse}\max(\textbf n \cdot l_i, 0)+ \textbf{C}_\text{specular}\max(\textbf n \cdot h_i, 0)^\sigma)\ \textbf{L}_j
 $$
+
 where $\sigma \in \R$ is the shininess coefficient, and $\textbf{C}_\text{emission},\ \textbf{C}_\text{ambient},\  \textbf{C}_\text{diffuse},\ \textbf{C}_\text{specular}$ are the emission, ambient, diffuse and specular coefficients of the material. The vector $\textbf{n}$ is the surface normal, $l_i$ is the direction to the light and  is the half-way direction between the direction to the viewer and the direction to the light.
 
 <figure>
@@ -116,8 +123,6 @@ The general idea is that once we have an intersection between the ray and the ge
 </figure>
 As we can see, now we have a more realistic shading, with areas further away from the light appearing darker and in shadow. Taking a look at the teapot on the left you can even see a warped reflection of the turquoise bunny to its left and the shadow of the blue teapot's spout covering the specular reflection. The side of the legs of the table exposed to the light are darker than the parts away from it while the entire table casts a shadow on the onlooking bunny.
 
-
-
 ## Encore
 
 ### Optimizations
@@ -133,44 +138,59 @@ One thing that kept bothering me in the above render is the fact that the edges 
 ### Monte Carlo Path Tracing
 
 The recursive depth implemented for the shading function acted as a count for the number of bounces for the ray. With a fixed recursive depth, we would end up with a dark scene like we did. To simulate the way the light photons would generate the image, we would then need to sample photons of multiple bounces.
+
 $$
 \text{PixelColor}_{ij} = \text{TotalColorFromPhotonsWithOneBounce}_{ij} \\
-                \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \       + \text{TotalColorFromPhotonsWithTwoBounce}_{ij}\\
-                \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  +
-\text{TotalColorFromPhotonsWithThreeBounce}_{ij} \\  \  + \ ... \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ + \text{TotalColorFromPhotonsWithTwoBounce}_{ij}\\
+ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +
+\text{TotalColorFromPhotonsWithThreeBounce}_{ij} \\ \ + \ ... \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  
 $$
+
+
 To compute this infinite sum, we use a Monte Carlo estimate  by using the russian roulette algorithm. Instead of picking a fixed path length $n$ and sampling paths with that length, we can let the photon run indefinitely. But, at every bounce, we have a probability $\lambda$ to terminate the path. Thus the probability of a path having $n$ bounces would be $(1-\lambda)^{n-1} \lambda$. Iterating this for a large number of samples gives us our  updated $\text{PixelColor}$ formula.
+
 $$
-\text{PixelColor}_{ij} =(1-\lambda)\lambda \cdot \text{TotalColorFromPhotonsWithOneBounce}_{ij} \\
-                \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \       + (1-\lambda)^2\lambda \cdot\text{TotalColorFromPhotonsWithTwoBounce}_{ij}\\
-                \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  +
-(1-\lambda)^3\lambda \cdot\text{TotalColorFromPhotonsWithThreeBounce}_{ij} \\  \  + \ ... \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
+text{PixelColor}_{ij} =(1-\lambda)\lambda \cdot \text{TotalColorFromPhotonsWithOneBounce}_{ij} \\
+ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ + (1-\lambda)^2\lambda \cdot\text{TotalColorFromPhotonsWithTwoBounce}_{ij}\\
+ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +
+(1-\lambda)^3\lambda \cdot\text{TotalColorFromPhotonsWithThreeBounce}_{ij} \\ \ + \ ... \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
+
+
 Note that because we introduce the term $(1-\lambda)^{n-1} \lambda$, we will have to multiply the Color from each path by the factor of $\frac{1}{(1-\lambda)^n\lambda}$ in order for the function to unfold into the original formula.
 
 ### Global Illumination
 
 Using this principle of of path tracing, we have a way to now recursively calculate the diffuse color as well. For each bounce taken by the photon, we have a decision: the photon could take a diffused bounce, or a reflected bounce. According to which ever decision is made we multiply the weight $W$ of the diffuse/specular color until the path terminates. Thus the color as a result of the path is given by
+
 $$
-Color_{Ray} = W_1W_2...W_{n-1}Color(\text{hit}_{\text{last}}) 
+Color_{Ray} = W_1W_2...W_{n-1}Color(\text{hit}_{\text{last}})
 $$
+
 To model the diffuse bounce, we can sample the cosine weighted hemisphere (so that there is a higher probability that the bounce path is closer towards the normal than tangent to the surface)
+
 $$
 u = 2\pi s, \ v=\sqrt{1-t} , \ \textbf{d} = \begin{bmatrix}
-    v\cos(u) \\
-    \sqrt t \\
-    v\sin(u)
+ v\cos(u) \\
+ \sqrt t \\
+ v\sin(u)
 \end{bmatrix}
 $$
 
+
+
+
 So finally, our rendering equation looks like this:
+
 $$
 L_{k^{th} bounce} = \begin{cases}
-C_{\text{diffuse}}L(\textbf{p},\textbf d)	&\text{diffuse bounce} \\
-C_{\text{specular}}L(\textbf{p},\textbf r)	&\text{specular bounce} \\
+C_{\text{diffuse}}L(\textbf{p},\textbf d) &\text{diffuse bounce} \\
+C_{\text{specular}}L(\textbf{p},\textbf r) &\text{specular bounce} \\
 C_{\text{diffuse}}\max(\textbf n \cdot l_i, 0)\cdot \text{visibility} & \text{terminating bounce}
 \end{cases}
 $$
+
+
 
 
 ## Demonstration
@@ -188,7 +208,7 @@ This section is for us to appreciate how all the new features we have implemente
 
 These series of images demonstrate the effect of the number of sampled paths per pixel. The lower sample rate of the first two image adds a lot of noise since the russian roulette algorithm does not have a large enough amount rays to approximate the infinite sum while the third image is closer to what we expect. Note that the light is right obove the short box and is completely in shadow.
 
-#### Russian Roulette $\lambda$ 
+#### Russian Roulette $\lambda$
 
 <figure align="center" display="inline">
     <img src="./screenshots/monte 0.1.png" alt="img" style="zoom:100%;" />
@@ -202,9 +222,12 @@ These images show how varying the $\lambda$ probability of terminating changes t
 #### Light Attenuation
 
 The final last hit color formula is given as follows
+
 $$
 \text{Color(hit)} = \sum_{l \in lights} (\text{visibility}) \frac{L_l D}{\text{attenuation}_l}\max(\langle\textbf{l}_l,\textbf{n}\rangle, 0 )
 $$
+
+
 The attenuation for the light is meant to model the light intensity dropoff as it travels. In the real world, $\text{attenuation} \propto d^2$ where $d$ is the distance traveled by the light. However, since we don't have any light scattering materials like air or fog in this scene, that $attenuation$ model would make our scene too dark. After reading some literature, I arrived at the conclusion that for our use case here, the approximation $\text{attenuation} \propto d$ works just fine.
 
 <figure align="center" display="inline">
@@ -238,8 +261,6 @@ In the image on the left, you can very clearly see the almost perfect reflective
 </figure>
 
 I think this figure really showcases how much better raytracing is when it comes to producing photorealistic images. It really gets you to appreciate the details like the sharp shadows, the reflections amongst the objects, the light behaviours, the materials, everything. You can also see how much better the image looks with anti-aliasing through the multisampling.
-
-
 
 ## Conclusion
 
